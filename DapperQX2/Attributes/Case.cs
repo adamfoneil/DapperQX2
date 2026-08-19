@@ -3,7 +3,7 @@
 [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = true)]
 public class CaseAttribute(string scope, object value, string expression) : Attribute
 {
-    public CaseAttribute(object value, string expression) : this(Extensions.DefaultWhereScope, value, expression)
+    public CaseAttribute(object value, string expression) : this(ServiceExtensions.DefaultWhereScope, value, expression)
     {
     }
 

@@ -6,7 +6,7 @@
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
 public class WhereAttribute(string scope, string expression) : Attribute
 {
-    public WhereAttribute(string expression) : this(Extensions.DefaultWhereScope, expression)
+    public WhereAttribute(string expression) : this(ServiceExtensions.DefaultWhereScope, expression)
     {
     }
 

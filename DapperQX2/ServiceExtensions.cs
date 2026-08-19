@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace DapperQX;
 
-public static class Extensions
+public static class ServiceExtensions
 {
     public const string DefaultWhereScope = "global";
 
