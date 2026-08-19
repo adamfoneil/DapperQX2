@@ -11,13 +11,13 @@ public static class QueryExtensions
         this IDbConnection connection, ILogger<TLogger> logger, 
         string sql, object? parameters, 
         IDbTransaction? txn = null, CommandType? commandType = null, int timeout = 30, string? correlationId = null) =>
-        await ExecuteInternalAsync<IEnumerable<TResult>, TLogger>(
+        await ExecuteInternalAsync(
             logger, 
-            "dynamic", 
+            nameof(LogQueryAsync), 
             sql, 
-            parameters ?? new object(), 
-            parameters?.ToString() ?? string.Empty,
-            async (s, p, t, ct, to) => await connection.QueryAsync<TResult>(s, p, t, ct, to), 
+            parameters, 
+            parameters?.ToString() ?? string.Empty, // todo: build static method and use inside Query class
+            async (s, p, t, ct, to) => await connection.QueryAsync<TResult>(s, p, t, to, ct), 
             correlationId: correlationId, 
             txn: txn, 
             commandType: commandType, 
@@ -25,7 +25,7 @@ public static class QueryExtensions
 
     internal static async Task<TResult> ExecuteInternalAsync<TResult, TQuery>(
         ILogger<TQuery> logger,    
-        string queryType, string sql, object parameters, string paramValueStr,
+        string queryType, string sql, object? parameters, string paramValueStr,
         Func<string, object?, IDbTransaction?, CommandType?, int, Task<TResult>> dapperMethod,
         string? correlationId = null, IDbTransaction? txn = null, CommandType? commandType = null, int timeout = 30)
     {
@@ -47,6 +47,5 @@ public static class QueryExtensions
             logger.LogError(exc, "{queryType}: {sql} with parameters {parameters} correlationId {correlationId}", queryType, sql, paramValueStr, correlationId);
             throw;
         }
-
     }
 }
