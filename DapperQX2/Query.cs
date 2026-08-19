@@ -16,19 +16,26 @@ public class Query<T>(string sqlTemplate, ILogger<Query<T>> logger)
         return SqlTemplate;
     }
 
+    protected virtual CommandType? CommandType => default;
+
+    protected virtual int Timeout => 30;
+
     protected virtual DynamicParameters BuildParameters() => throw new NotImplementedException();
 
     public async Task<T> ExecuteSingleAsync(IDbConnection connection, IDbTransaction? txn = null, string? correlationId = null) =>
-        await ExecuteInnerAsync(async (sql, dp, txn) => await connection.QuerySingleAsync<T>(sql, dp, txn), txn, correlationId);
+        await ExecuteInnerAsync(async (sql, dp, txn, cmdType, timeout) => 
+            await connection.QuerySingleAsync<T>(sql, dp, txn, timeout, cmdType), txn, correlationId);
 
     public async Task<T?> ExecuteSingleOrDefaultAsync(IDbConnection connection, IDbTransaction? txn = null, string? correlationId = null) =>
-        await ExecuteInnerAsync(async (sql, dp, txn) => await connection.QuerySingleOrDefaultAsync<T>(sql, dp, txn), txn, correlationId);
+        await ExecuteInnerAsync(async (sql, dp, txn, cmdType, timeout) => 
+            await connection.QuerySingleOrDefaultAsync<T>(sql, dp, txn, timeout, cmdType), txn, correlationId);
 
     public async Task<IEnumerable<T>> ExecucuteAsync(IDbConnection connection, IDbTransaction? txn = null, string? correlationId = null) =>
-        await ExecuteInnerAsync(async (sql, dp, txn) => await connection.QueryAsync<T>(sql, dp, txn), txn, correlationId);    
+        await ExecuteInnerAsync(async (sql, dp, txn, cmdType, timeout) => 
+            await connection.QueryAsync<T>(sql, dp, txn, timeout, cmdType), txn, correlationId);    
 
     private async Task<TInner> ExecuteInnerAsync<TInner>(        
-        Func<string, DynamicParameters, IDbTransaction?, Task<TInner>> dapperMethod, 
+        Func<string, object?, IDbTransaction?, CommandType?, int, Task<TInner>> dapperMethod, 
         IDbTransaction? txn = null, string? correlationId = null)
     {
         var sql = BuildQuery();
@@ -40,7 +47,7 @@ public class Query<T>(string sqlTemplate, ILogger<Query<T>> logger)
         return await QueryExtensions.ExecuteInternalAsync(_logger, 
             queryType, sql, parameters, paramValueStr,
             dapperMethod, 
-            correlationId, txn);
+            correlationId, txn, CommandType, Timeout);
     }
 
     private static Dictionary<string, object> GetParameterValues(DynamicParameters parameters)

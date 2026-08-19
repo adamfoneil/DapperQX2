@@ -7,16 +7,32 @@ namespace DapperQX;
 
 public static class QueryExtensions
 {
+    public static async Task<IEnumerable<TResult>> LogQueryAsync<TResult, TLogger>(
+        this IDbConnection connection, ILogger<TLogger> logger, 
+        string sql, object? parameters, 
+        IDbTransaction? txn = null, CommandType? commandType = null, int timeout = 30, string? correlationId = null) =>
+        await ExecuteInternalAsync<IEnumerable<TResult>, TLogger>(
+            logger, 
+            "dynamic", 
+            sql, 
+            parameters ?? new object(), 
+            parameters?.ToString() ?? string.Empty,
+            async (s, p, t, ct, to) => await connection.QueryAsync<TResult>(s, p, t, ct, to), 
+            correlationId: correlationId, 
+            txn: txn, 
+            commandType: commandType, 
+            timeout: timeout);
+
     internal static async Task<TResult> ExecuteInternalAsync<TResult, TQuery>(
         ILogger<TQuery> logger,    
-        string queryType, string sql, DynamicParameters parameters, string paramValueStr,
-        Func<string, DynamicParameters, IDbTransaction?, Task<TResult>> dapperMethod,
-        string? correlationId = null, IDbTransaction? txn = null)
+        string queryType, string sql, object parameters, string paramValueStr,
+        Func<string, object?, IDbTransaction?, CommandType?, int, Task<TResult>> dapperMethod,
+        string? correlationId = null, IDbTransaction? txn = null, CommandType? commandType = null, int timeout = 30)
     {
         try
         {
             var sw = Stopwatch.StartNew();
-            var results = await dapperMethod.Invoke(sql, parameters, txn);
+            var results = await dapperMethod.Invoke(sql, parameters, txn, commandType, timeout);
             sw.Stop();
 
             if (logger.IsEnabled(LogLevel.Information))
