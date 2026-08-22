@@ -14,7 +14,7 @@ public static partial class WhereClause
     {
         DynamicParameters dp = new();
         List<string> useTerms = [];
-        foreach (var term in terms.Where(t => t.Value is not null && (t.NullEquivalent is not null && t.Value != t.NullEquivalent)))
+        foreach (var term in terms.Where(t => t.Value is not null && !Equals(t.Value, t.NullEquivalent)))
         {
             var parameters = ExtractParamNames(term.Expression);
             if (parameters.Length > 1) throw new NotSupportedException("Can't have multiple parameters in expression");

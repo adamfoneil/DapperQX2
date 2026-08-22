@@ -9,9 +9,10 @@ public sealed class WhereClauseTests
     public void SimpleExample()
     {
         var (whereClause, _) = WhereClause.Build([
-            new("[EmployeeId]=@employeeId", 23),
-            new("[Amount]>@amount", 100),
-            new("[Name] LIKE '%' + @name + '%'", null)
+            new(23, "[EmployeeId]=@employeeId"),
+            new(100, "[Amount]>@amount"),
+            new(null, "[Name] LIKE '%' + @name + '%'"),
+            new(0, "[DistributionAmount]>=@distributionAmount", NullEquivalent: 0) // omitted because 0 is "equivalent" to null here
         ]);
 
         Assert.AreEqual("[EmployeeId]=@employeeId AND [Amount]>@amount", whereClause);
