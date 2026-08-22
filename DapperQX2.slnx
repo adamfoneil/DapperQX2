@@ -1,4 +1,5 @@
 <Solution>
   <Folder Name="/Solution Items/" />
   <Project Path="DapperQX2/DapperQX2.csproj" />
+  <Project Path="Testing/Testing.csproj" Id="780598db-1267-4aea-bb06-db00e73fd07d" />
 </Solution>
