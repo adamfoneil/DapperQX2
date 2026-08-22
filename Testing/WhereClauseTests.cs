@@ -19,6 +19,19 @@ public sealed class WhereClauseTests
     }
 
     [TestMethod]
+    public void AnotherExample()
+    {
+        var (whereClause, _) = WhereClause.Build([
+            new(null, "[EmployeeId]=@employeeId"),
+            new(100, "[Amount]>@amount"),
+            new("frank", "[Name] LIKE '%' + @name + '%'"),
+            new(15, "[DistributionAmount]>=@distributionAmount", NullEquivalent: 0)
+        ]);
+
+        Assert.AreEqual("[Amount]>@amount AND [Name] LIKE '%' + @name + '%' AND [DistributionAmount]>=@distributionAmount", whereClause);
+    }
+
+    [TestMethod]
     [DataRow("[EmployeeId] = @employeeId", "@employeeId")]
     [DataRow("BETWEEN @start AND @end", "@start;@end")]
     [DataRow("[Amount]>=@minAmount", "@minAmount")]
