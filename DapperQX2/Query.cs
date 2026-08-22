@@ -4,19 +4,51 @@ using System.Data;
 
 namespace DapperQX;
 
-public class Query<T>(string sqlTemplate, ILogger<Query<T>> logger)
+public abstract class Query<T>(string sqlTemplate, ILogger<Query<T>> logger)
 {    
     private readonly ILogger<Query<T>> _logger = logger;
 
     public string SqlTemplate { get; init; } = sqlTemplate;
 
-    protected virtual string BuildQuery()
+    /// <summary>
+    /// Defines named sort options for the query. 
+    /// Keys are arbitrary identifiers referenced by the SortKey property to determine a query's sort behavior.
+    /// Values are SQL expressions
+    /// </summary>
+    protected virtual Dictionary<string, string> SortOptions { get; set; } = [];
+
+    /// <summary>
+    /// which SortOptions Key is applied?
+    /// </summary>
+    public string? SortKey { get; set; }
+
+    protected abstract WhereClause.Term[] WhereClauseTerms { get; }
+
+    private const string WhereToken = "{where}";
+    private const string AndWhereToken = "{andWhere}";
+
+    private (string, DynamicParameters) ResolveQuery()
     {
-        // apply properties
-        return SqlTemplate;
+        string result = SqlTemplate;
+        var (whereClause, dp) = WhereClause.Build(WhereClauseTerms);
+
+        if (result.Contains(WhereToken))
+        {
+            result = result.Replace(WhereToken, whereClause);
+        }
+        
+        if (result.Contains(AndWhereToken))
+        {
+            result = result.Replace(AndWhereToken, whereClause);
+        }
+
+
+        var orderBy = SortKey is not null ? SortOptions.GetValueOrDefault(SortKey) : default;
+
+        throw new NotImplementedException();
     }
 
-    protected virtual CommandType? CommandType => default;
+    protected virtual CommandType CommandType => CommandType.Text;
 
     protected virtual int Timeout => 30;
 
@@ -38,35 +70,12 @@ public class Query<T>(string sqlTemplate, ILogger<Query<T>> logger)
         Func<string, object?, IDbTransaction?, CommandType?, int, Task<TInner>> dapperMethod, 
         IDbTransaction? txn = null, string? correlationId = null)
     {
-        var sql = BuildQuery();
-        var parameters = BuildParameters();
-        var paramValues = GetParameterValues(parameters);
-        var paramValueStr = string.Join(", ", paramValues.Select(kp => $"{kp.Key}={kp.Value}"));
+        var (sql, parameters) = ResolveQuery();        
         var queryType = GetType().Name;
 
-        return await QueryExtensions.ExecuteInternalAsync(_logger, 
-            queryType, sql, parameters, paramValueStr,
-            dapperMethod, 
+        return await QueryExtensions.ExecuteInternalAsync(_logger,
+            queryType, sql, parameters,
+            dapperMethod,
             correlationId, txn, CommandType, Timeout);
-    }
-
-    private static Dictionary<string, object> GetParameterValues(DynamicParameters parameters)
-    {
-        var result = new Dictionary<string, object>();
-        if (parameters == null) return result;
-
-        foreach (var paramName in parameters.ParameterNames)
-        {
-            try
-            {
-                result[paramName] = parameters.Get<dynamic>(paramName);
-            }
-            catch
-            {
-                result[paramName] = "<unable to retrieve>";
-            }
-        }
-
-        return result;
-    }
+    }    
 }
