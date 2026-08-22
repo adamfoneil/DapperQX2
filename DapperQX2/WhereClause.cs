@@ -5,7 +5,7 @@ namespace DapperQX;
 
 public static partial class WhereClause
 {
-    public record Term(string Expression, object? Value);
+    public record Term(object? Value, string Expression, object? NullEquivalent = null);
 
     /// <summary>
     /// concatenates multiple expression into a single WHERE clause
@@ -14,7 +14,7 @@ public static partial class WhereClause
     {
         DynamicParameters dp = new();
         List<string> useTerms = [];
-        foreach (var term in terms.Where(t => t.Value is not null))
+        foreach (var term in terms.Where(t => t.Value is not null && (t.NullEquivalent is not null && t.Value != t.NullEquivalent)))
         {
             var parameters = ExtractParamNames(term.Expression);
             if (parameters.Length > 1) throw new NotSupportedException("Can't have multiple parameters in expression");
