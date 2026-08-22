@@ -32,6 +32,31 @@ public sealed class WhereClauseTests
     }
 
     [TestMethod]
+    public void ScopedExample()
+    {
+        WhereClause.ScopedTerm[] terms = [
+            new(new DateTime(2026, 1, 1), new() 
+            {
+                ["prj"] = "[p].[Date]>=@minWorkDate",
+                ["wr"] = "[wr].[Date]>=@minWorkDate"
+            }),
+            new(new DateTime(2026, 12, 31), new()
+            {
+                ["prj"] = "[p].[Date]<=@maxWorkDate",
+                ["wr"] = "[wr].[Date]<=@maxWorkDate"
+            })
+        ];
+
+        var (criteria, dp) = WhereClause.BuildScoped(terms);
+
+        Assert.AreEqual("[p].[Date]>=@minWorkDate AND [p].[Date]<=@maxWorkDate", criteria["prj"]);
+        Assert.AreEqual("[wr].[Date]>=@minWorkDate AND [wr].[Date]<=@maxWorkDate", criteria["wr"]);
+
+        Assert.AreEqual(new DateTime(2026, 1, 1), dp.Get<DateTime>("minWorkDate"));
+        Assert.AreEqual(new DateTime(2026, 12, 31), dp.Get<DateTime>("maxWorkDate"));
+    }
+
+    [TestMethod]
     [DataRow("[EmployeeId] = @employeeId", "@employeeId")]
     [DataRow("BETWEEN @start AND @end", "@start;@end")]
     [DataRow("[Amount]>=@minAmount", "@minAmount")]
